@@ -4,7 +4,10 @@ import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
 
-import booksData from './books.json'; // no "assert" part
+import fs from 'fs';
+const rawData = fs.readFileSync('./books.json', 'utf8');
+const booksData = JSON.parse(rawData);
+
 
 dotenv.config();
 const app = express();
