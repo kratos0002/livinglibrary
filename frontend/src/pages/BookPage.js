@@ -7,8 +7,8 @@ const BookPage = () => {
   const [bookData, setBookData] = useState(null);
 
   useEffect(() => {
-    axios.get(\`https://livinglibrary.onrender.com/api/book/\${id}\`)
-      .then(response => {
+    axios.get(`https://livinglibrary.onrender.com/api/book/${id}`)
+    .then(response => {
         setBookData(response.data);
       })
       .catch(error => {
