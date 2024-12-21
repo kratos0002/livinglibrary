@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BookPage from './pages/BookPage';
 import ChatLibrarian from './pages/ChatLibrarian';
 import ChatRaskolnikov from './pages/ChatRaskolnikov';
+import Home from './pages/home';
 
 function App() {
   return (
