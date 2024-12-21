@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BookPage from './pages/BookPage';
+import Navbar from "./components/Navbar";
+
 import ChatLibrarian from './pages/ChatLibrarian';
 import ChatRaskolnikov from './pages/ChatRaskolnikov';
 import Home from './pages/home';
