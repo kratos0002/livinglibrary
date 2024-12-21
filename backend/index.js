@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
 
-import booksData from './books.json' assert { type: 'json' };
+import booksData from './books.json'; // no "assert" part
 
 dotenv.config();
 const app = express();
