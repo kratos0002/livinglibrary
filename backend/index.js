@@ -12,9 +12,7 @@ const booksData = JSON.parse(rawData);
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: "https://livinglibrary.vercel.app/",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: "*",
 }));
 app.use(express.json());
 
