@@ -12,7 +12,7 @@ const booksData = JSON.parse(rawData);
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: "https://animated-fiesta-645p5wwpvv4347g9-3000.app.github.dev",
+  origin: "https://livinglibrary.vercel.app/",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
