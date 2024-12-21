@@ -1,0 +1,25 @@
+{
+  "crime_and_punishment": {
+    "title": "Crime and Punishment",
+    "author": "Fyodor Dostoevsky",
+    "publishedYear": 1866,
+    "description": "A deeply psychological novel exploring guilt, redemption, and moral dilemmas.",
+    "keyThemes": ["guilt", "redemption", "morality", "existentialism"],
+    "characters": [
+      {
+        "name": "Raskolnikov",
+        "description": "An impoverished ex-student who commits murder...",
+        "roleInStory": "Protagonist"
+      },
+      {
+        "name": "Sonia",
+        "description": "A young woman who turns to prostitution to support her family...",
+        "roleInStory": "Moral compass"
+      }
+    ],
+    "funFacts": [
+      "Originally serialized in The Russian Messenger in 1866.",
+      "Has been adapted into film over 20 times."
+    ]
+  }
+}
