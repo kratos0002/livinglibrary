@@ -7,7 +7,7 @@ const ChatRaskolnikov = () => {
 
   const sendMessage = async () => {
     try {
-      const response = await axios.post('http://localhost:3001/api/chat/raskolnikov', {
+      const response = await axios.post('https://livinglibrary.onrender.com/chat/raskolnikov', {
         userMessage
       });
       const { raskolnikovMessage } = response.data;

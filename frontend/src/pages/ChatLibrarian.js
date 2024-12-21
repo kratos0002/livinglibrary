@@ -7,7 +7,7 @@ const ChatLibrarian = () => {
 
   const sendMessage = async () => {
     try {
-      const response = await axios.post('http://localhost:3001/api/chat/librarian', {
+      const response = await axios.post('https://livinglibrary.onrender.com/api/chat/librarian', {
         userMessage,
         bookId: 'crime_and_punishment'
       });
