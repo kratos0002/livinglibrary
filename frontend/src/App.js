@@ -10,6 +10,7 @@ function App() {
       <div style={{ padding: "1rem" }}>
         <h1>The Living Library (POC)</h1>
         <Routes>
+        <Route path="/" element={<Home />} />          {/* Add a route for "/" */}
           <Route path="/book/:id" element={<BookPage />} />
           <Route path="/chat/librarian" element={<ChatLibrarian />} />
           <Route path="/chat/raskolnikov" element={<ChatRaskolnikov />} />
