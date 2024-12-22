@@ -1,39 +1,57 @@
-// src/pages/BookPage.js
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 
 function BookPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // Book ID from URL
   const [bookData, setBookData] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [newReview, setNewReview] = useState({
+    reviewer_name: "",
+    rating: "",
+    comment: "",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Fetch book data and reviews
   useEffect(() => {
     axios
       .get(`https://livinglibrary.onrender.com/api/book/${id}`)
       .then((response) => {
-        setBookData(response.data);
+        setBookData(response.data.book);
+        setReviews(response.data.reviews);
         setLoading(false);
       })
-      .catch((error) => {
+      .catch((err) => {
         setError("Failed to load book data");
         setLoading(false);
       });
   }, [id]);
 
+  // Add a new review
+  const handleReviewSubmit = () => {
+    axios
+      .post(`https://your-backend-url/api/book/${id}/review`, newReview)
+      .then((response) => {
+        setReviews((prevReviews) => [...prevReviews, response.data]);
+        setNewReview({ reviewer_name: "", rating: "", comment: "" });
+      })
+      .catch((err) => {
+        console.error("Error adding review:", err);
+      });
+  };
+
   if (loading) return <div>Loading book data...</div>;
   if (error) return <div>{error}</div>;
 
-  const { title, author, description, publishedYear, keyThemes, characters, coverImage } = bookData;
-
   return (
-    <div style={{ padding: "2rem", fontFamily: "'Merriweather', serif" }}>
-      {/* Hero Section */}
+    <div style={{ padding: "2rem" }}>
+      {/* Book Details Section */}
       <div style={{ textAlign: "center", marginBottom: "2rem" }}>
         <img
-          src={coverImage || "https://via.placeholder.com/200x300?text=Book+Cover"}
-          alt={`${title} cover`}
+          src={bookData.cover_image}
+          alt={`${bookData.title} cover`}
           style={{
             width: "200px",
             height: "300px",
@@ -43,94 +61,87 @@ function BookPage() {
             marginBottom: "1rem",
           }}
         />
-        <h1 style={{ color: "#2C3E50" }}>{title}</h1>
-        <h3 style={{ color: "#34495E" }}>by {author}</h3>
-        <p style={{ fontStyle: "italic", color: "#7F8C8D" }}>
-          {description || "A timeless masterpiece exploring the depths of human psychology."}
+        <h1>{bookData.title}</h1>
+        <h3>by {bookData.author}</h3>
+        <p>{bookData.description}</p>
+        <p>
+          <strong>Published Year:</strong> {bookData.published_year}
+        </p>
+        <p>
+          <strong>Key Themes:</strong> {bookData.keyThemes.join(", ")}
+        </p>
+        <p>
+          <strong>Fun Facts:</strong>{" "}
+          {bookData.fun_facts.map((fact, idx) => (
+            <span key={idx}>{fact}</span>
+          ))}
         </p>
       </div>
 
-      {/* Metadata Section */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-around",
-          margin: "2rem 0",
-          padding: "1rem",
-          border: "1px solid #BDC3C7",
-          borderRadius: "10px",
-          background: "#ECF0F1",
-        }}
-      >
-        <div>
-          <strong>Published Year:</strong> <span>{publishedYear}</span>
-        </div>
-        <div>
-          <strong>Themes:</strong> <span>{keyThemes.join(", ")}</span>
-        </div>
-      </div>
-
-      {/* Character Highlights */}
+      {/* Reviews Section */}
       <div>
-        <h3 style={{ color: "#2C3E50", marginBottom: "1rem" }}>Key Characters</h3>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          {characters.map((char, index) => (
+        <h2>Reviews</h2>
+        {reviews.length > 0 ? (
+          reviews.map((review) => (
             <div
-              key={index}
+              key={review.id}
               style={{
-                border: "1px solid #BDC3C7",
-                borderRadius: "10px",
+                background: "#f9f9f9",
                 padding: "1rem",
-                width: "200px",
-                textAlign: "center",
-                background: "#FFF",
+                borderRadius: "8px",
+                marginBottom: "1rem",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
               }}
             >
-              <h4 style={{ color: "#34495E" }}>{char.name}</h4>
-              <p style={{ fontStyle: "italic", color: "#7F8C8D" }}>{char.roleInStory}</p>
+              <strong>{review.reviewer_name}</strong> ({review.rating}/5)
+              <p>{review.comment}</p>
+              <small>
+                Posted on: {new Date(review.created_at).toLocaleDateString()}
+              </small>
             </div>
-          ))}
-        </div>
+          ))
+        ) : (
+          <p>No reviews yet. Be the first to review this book!</p>
+        )}
       </div>
 
-      {/* Interactive Options */}
-      <div style={{ textAlign: "center", marginTop: "2rem" }}>
-        <h3 style={{ color: "#2C3E50" }}>Engage with the Book</h3>
-        <div style={{ margin: "1rem 0" }}>
-          <Link
-            to="/chat/librarian"
-            style={{
-              marginRight: "1rem",
-              padding: "10px 20px",
-              background: "#1ABC9C",
-              color: "#FFF",
-              textDecoration: "none",
-              borderRadius: "5px",
-            }}
-          >
-            Ask the Librarian
-          </Link>
-          <Link
-            to="/chat/raskolnikov"
-            style={{
-              padding: "10px 20px",
-              background: "#E74C3C",
-              color: "#FFF",
-              textDecoration: "none",
-              borderRadius: "5px",
-            }}
-          >
-            Chat with Raskolnikov
-          </Link>
-        </div>
-      </div>
-
-      {/* Book Visualizations */}
-      <div style={{ textAlign: "center", marginTop: "2rem" }}>
-        <h3 style={{ color: "#2C3E50" }}>Explore Themes and Characters</h3>
-        <p style={{ fontStyle: "italic", color: "#7F8C8D" }}>
-          Coming Soon: A detailed relationship graph and timeline!
-        </p>
+      {/* Add Review Section */}
+      <div style={{ marginTop: "2rem" }}>
+        <h3>Add a Review</h3>
+        <input
+          type="text"
+          placeholder="Your Name"
+          value={newReview.reviewer_name}
+          onChange={(e) =>
+            setNewReview({ ...newReview, reviewer_name: e.target.value })
+          }
+          style={{ display: "block", marginBottom: "1rem", width: "100%" }}
+        />
+        <input
+          type="number"
+          placeholder="Rating (1-5)"
+          value={newReview.rating}
+          onChange={(e) =>
+            setNewReview({ ...newReview, rating: e.target.value })
+          }
+          style={{ display: "block", marginBottom: "1rem", width: "100%" }}
+        />
+        <textarea
+          placeholder="Your Review"
+          value={newReview.comment}
+          onChange={(e) =>
+            setNewReview({ ...newReview, comment: e.target.value })
+          }
+          style={{
+            display: "block",
+            marginBottom: "1rem",
+            width: "100%",
+            height: "100px",
+          }}
+        ></textarea>
+        <button onClick={handleReviewSubmit} style={{ padding: "0.5rem 1rem" }}>
+          Submit
+        </button>
       </div>
     </div>
   );

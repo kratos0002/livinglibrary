@@ -1,59 +1,58 @@
-// src/pages/Home.js
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
-const books = [
-  {
-    id: "crime_and_punishment",
-    title: "Crime and Punishment",
-    author: "Fyodor Dostoevsky",
-    description: "A psychological exploration of guilt and redemption."
-  }
-];
+function HomePage() {
+  const [books, setBooks] = useState([]);
 
-function Home() {
+  useEffect(() => {
+    axios
+      .get("https://livinglibrary.onrender.com/api/books")
+      .then((response) => setBooks(response.data))
+      .catch((error) => console.error(error));
+  }, []);
+
   return (
-    <div style={{ padding: "2rem", fontFamily: "'Merriweather', serif" }}>
-      <h1 style={{ textAlign: "center", color: "#2C3E50" }}>The Living Library</h1>
-      <p style={{ textAlign: "center", color: "#34495E" }}>
-        Dive into the world of books and interact with your favorite characters.
-      </p>
-
-      <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "1rem" }}>
+    <div style={{ padding: "2rem" }}>
+      <h1>The Living Library</h1>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
         {books.map((book) => (
-          <div
+          <Link
+            to={`/book/${book.id}`}
             key={book.id}
             style={{
-              border: "1px solid #BDC3C7",
-              borderRadius: "10px",
-              padding: "1rem",
-              width: "300px",
-              background: "#ECF0F1"
+              textDecoration: "none",
+              color: "inherit",
+              width: "200px",
             }}
           >
-            <h2 style={{ color: "#2C3E50" }}>{book.title}</h2>
-            <p><strong>Author:</strong> {book.author}</p>
-            <p style={{ fontStyle: "italic" }}>{book.description}</p>
-            <Link
-              to={`/book/${book.id}`}
+            <div
               style={{
-                display: "inline-block",
-                marginTop: "10px",
-                padding: "10px 20px",
-                background: "#3498DB",
-                color: "#FFF",
-                textDecoration: "none",
-                borderRadius: "5px",
-                textAlign: "center"
+                background: "#fff",
+                borderRadius: "10px",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                padding: "1rem",
+                textAlign: "center",
               }}
             >
-              Explore Book
-            </Link>
-          </div>
+              <img
+                src={book.cover_image}
+                alt={book.title}
+                style={{
+                  width: "150px",
+                  height: "200px",
+                  objectFit: "cover",
+                  marginBottom: "1rem",
+                }}
+              />
+              <h3>{book.title}</h3>
+              <p>by {book.author}</p>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
   );
 }
 
-export default Home;
+export default HomePage;
