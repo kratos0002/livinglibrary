@@ -1,65 +1,87 @@
-// index.js
-import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
-import OpenAI from 'openai';
-
-import fs from 'fs';
-const rawData = fs.readFileSync('./books.json', 'utf8');
-const booksData = JSON.parse(rawData);
-
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
+
 const app = express();
-app.use(cors({
-  origin: "*",
-}));
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// Create the OpenAI client (new usage)
+// Create the OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  // organization: "org-xxxx",   // optional
 });
 
+// Create Supabase client
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
 // GET /api/book/:id
-app.get('/api/book/:id', (req, res) => {
+app.get("/api/book/:id", async (req, res) => {
   const { id } = req.params;
-  if (booksData[id]) {
-    return res.json(booksData[id]);
-  } else {
-    return res.status(404).json({ error: 'Book not found' });
+
+  try {
+    // Fetch book data from Supabase
+    const { data: book, error: bookError } = await supabase
+      .from("books")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (bookError || !book) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    // Fetch reviews for the book
+    const { data: reviews, error: reviewsError } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("book_id", id);
+
+    if (reviewsError) {
+      console.error("Error fetching reviews:", reviewsError);
+    }
+
+    res.json({ book, reviews: reviews || [] });
+  } catch (error) {
+    console.error("Error fetching book data:", error.message);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // POST /api/chat/librarian
-app.post('/api/chat/librarian', async (req, res) => {
+app.post("/api/chat/librarian", async (req, res) => {
   try {
     const { userMessage, bookId } = req.body;
-    const book = booksData[bookId];
 
-    if (!book) {
-      return res.status(400).json({ error: 'Invalid bookId' });
+    // Fetch book data from Supabase
+    const { data: book, error: bookError } = await supabase
+      .from("books")
+      .select("*")
+      .eq("id", bookId)
+      .single();
+
+    if (bookError || !book) {
+      return res.status(400).json({ error: "Invalid bookId" });
     }
 
     const systemPrompt = `
       You are a well-informed librarian for the book "${book.title}" by ${book.author}.
       The user will ask questions about historical context, publication data, plot summary, etc.
       Use the following data for reference:
-      - Published Year: ${book.publishedYear}
-      - Characters: ${book.characters.map(c => c.name).join(', ')}
-      - Themes: ${book.keyThemes.join(', ')}
+      - Published Year: ${book.published_year}
       - Description: ${book.description}
-      - Fun Facts: ${book.funFacts.join(', ')}
+      - Fun Facts: ${book.fun_facts.join(", ")}
       Answer in a helpful, factual way.
     `;
 
-    // Use the new client: openai.chat.completions.create
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
       ],
       max_tokens: 300,
       temperature: 0.7,
@@ -68,13 +90,13 @@ app.post('/api/chat/librarian', async (req, res) => {
     const librarianMessage = response.choices[0].message.content;
     res.json({ librarianMessage });
   } catch (error) {
-    console.error('Error in librarian chat:', error.message);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error in librarian chat:", error.message);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // POST /api/chat/raskolnikov
-app.post('/api/chat/raskolnikov', async (req, res) => {
+app.post("/api/chat/raskolnikov", async (req, res) => {
   try {
     const { userMessage } = req.body;
 
@@ -86,10 +108,10 @@ app.post('/api/chat/raskolnikov', async (req, res) => {
     `;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
       ],
       max_tokens: 300,
       temperature: 0.8,
@@ -98,8 +120,8 @@ app.post('/api/chat/raskolnikov', async (req, res) => {
     const raskolnikovMessage = response.choices[0].message.content;
     res.json({ raskolnikovMessage });
   } catch (error) {
-    console.error('Error in Raskolnikov chat:', error.message);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error in Raskolnikov chat:", error.message);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
