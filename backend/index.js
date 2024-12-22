@@ -18,6 +18,27 @@ const openai = new OpenAI({
 // Create Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
+
+// GET /api/books
+app.get('/api/books', async (req, res) => {
+  try {
+    const { data: books, error } = await supabase
+      .from('books')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching books:', error);
+      return res.status(500).json({ error: 'Error fetching books' });
+    }
+
+    res.json({ books });
+  } catch (err) {
+    console.error('Server error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 // GET /api/book/:id
 app.get("/api/book/:id", async (req, res) => {
   const { id } = req.params;
