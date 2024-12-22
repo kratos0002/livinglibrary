@@ -31,12 +31,14 @@ app.get('/api/books', async (req, res) => {
       return res.status(500).json({ error: 'Error fetching books' });
     }
 
-    res.json({ books });
+    // Return books array
+    res.json(books || []);
   } catch (err) {
     console.error('Server error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 // GET /api/book/:id

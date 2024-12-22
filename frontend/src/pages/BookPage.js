@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 function BookPage() {
@@ -13,6 +13,7 @@ function BookPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   // Fetch book data and reviews
   useEffect(() => {
@@ -20,7 +21,7 @@ function BookPage() {
       .get(`https://livinglibrary.onrender.com/api/book/${id}`)
       .then((response) => {
         setBookData(response.data.book);
-        setReviews(response.data.reviews);
+        setReviews(response.data.reviews || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -32,7 +33,7 @@ function BookPage() {
   // Add a new review
   const handleReviewSubmit = () => {
     axios
-      .post(`https://your-backend-url/api/book/${id}/review`, newReview)
+      .post(`https://livinglibrary.onrender.com/api/book/${id}/review`, newReview)
       .then((response) => {
         setReviews((prevReviews) => [...prevReviews, response.data]);
         setNewReview({ reviewer_name: "", rating: "", comment: "" });
@@ -46,56 +47,103 @@ function BookPage() {
   if (error) return <div>{error}</div>;
 
   return (
-    <div style={{ padding: "2rem" }}>
-      {/* Book Details Section */}
-      <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <img
-          src={bookData.cover_image}
-          alt={`${bookData.title} cover`}
-          style={{
-            width: "200px",
-            height: "300px",
-            objectFit: "cover",
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-            marginBottom: "1rem",
-          }}
-        />
-        <h1>{bookData.title}</h1>
-        <h3>by {bookData.author}</h3>
-        <p>{bookData.description}</p>
-        <p>
-          <strong>Published Year:</strong> {bookData.published_year}
-        </p>
-        <p>
-          <strong>Key Themes:</strong> {bookData.keyThemes.join(", ")}
-        </p>
-        <p>
-          <strong>Fun Facts:</strong>{" "}
-          {bookData.fun_facts.map((fact, idx) => (
-            <span key={idx}>{fact}</span>
-          ))}
-        </p>
+    <div
+      style={{
+        maxWidth: "900px",
+        margin: "auto",
+        fontFamily: "'Helvetica', 'Arial', sans-serif",
+      }}
+    >
+      {/* Book Header */}
+      <div style={{ display: "flex", margin: "2rem 0" }}>
+        <div style={{ flex: "1" }}>
+          <img
+            src={bookData?.cover_image || "https://via.placeholder.com/150"}
+            alt={`${bookData?.title || "Book"} cover`}
+            style={{
+              width: "200px",
+              height: "300px",
+              objectFit: "cover",
+              borderRadius: "10px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          />
+        </div>
+        <div style={{ flex: "2", paddingLeft: "1.5rem" }}>
+          <h1 style={{ fontSize: "2rem", fontWeight: "bold" }}>
+            {bookData?.title || "Untitled Book"}
+          </h1>
+          <h3 style={{ fontSize: "1.2rem", color: "#555" }}>
+            by {bookData?.author || "Unknown Author"}
+          </h3>
+          <p style={{ fontSize: "1rem", color: "#333" }}>
+            {bookData?.description || "No description available."}
+          </p>
+          <p>
+            <strong>Published Year:</strong> {bookData?.published_year || "N/A"}
+          </p>
+          <p>
+            <strong>Key Themes:</strong>{" "}
+            {bookData?.keyThemes?.join(", ") || "N/A"}
+          </p>
+          <p>
+            <strong>Fun Facts:</strong>{" "}
+            {bookData?.fun_facts?.length > 0
+              ? bookData.fun_facts.map((fact, idx) => (
+                  <span key={idx}>{fact}</span>
+                ))
+              : "No fun facts available."}
+          </p>
+          <div style={{ marginTop: "1rem" }}>
+            <button
+              onClick={() => navigate(`/chat/librarian/`)}
+              style={{
+                background: "#007BFF",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "5px",
+                cursor: "pointer",
+                marginRight: "0.5rem",
+              }}
+            >
+              Chat to Librarian
+            </button>
+            <button
+              onClick={() => navigate(`/chat/raskolnikov`)}
+              style={{
+                background: "#6c757d",
+                color: "white",
+                border: "none",
+                padding: "0.5rem 1rem",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Chat to Raskolnikov
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Reviews Section */}
       <div>
-        <h2>Reviews</h2>
+        <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Reviews</h2>
         {reviews.length > 0 ? (
           reviews.map((review) => (
             <div
               key={review.id}
               style={{
-                background: "#f9f9f9",
+                background: "#f8f9fa",
                 padding: "1rem",
-                borderRadius: "8px",
+                borderRadius: "5px",
                 marginBottom: "1rem",
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e1e1e1",
               }}
             >
               <strong>{review.reviewer_name}</strong> ({review.rating}/5)
               <p>{review.comment}</p>
-              <small>
+              <small style={{ color: "#6c757d" }}>
                 Posted on: {new Date(review.created_at).toLocaleDateString()}
               </small>
             </div>
@@ -115,7 +163,14 @@ function BookPage() {
           onChange={(e) =>
             setNewReview({ ...newReview, reviewer_name: e.target.value })
           }
-          style={{ display: "block", marginBottom: "1rem", width: "100%" }}
+          style={{
+            display: "block",
+            marginBottom: "1rem",
+            width: "100%",
+            padding: "0.5rem",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+          }}
         />
         <input
           type="number"
@@ -124,7 +179,14 @@ function BookPage() {
           onChange={(e) =>
             setNewReview({ ...newReview, rating: e.target.value })
           }
-          style={{ display: "block", marginBottom: "1rem", width: "100%" }}
+          style={{
+            display: "block",
+            marginBottom: "1rem",
+            width: "100%",
+            padding: "0.5rem",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+          }}
         />
         <textarea
           placeholder="Your Review"
@@ -137,9 +199,22 @@ function BookPage() {
             marginBottom: "1rem",
             width: "100%",
             height: "100px",
+            padding: "0.5rem",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
           }}
         ></textarea>
-        <button onClick={handleReviewSubmit} style={{ padding: "0.5rem 1rem" }}>
+        <button
+          onClick={handleReviewSubmit}
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#007BFF",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
           Submit
         </button>
       </div>
