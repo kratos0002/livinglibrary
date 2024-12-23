@@ -6,6 +6,7 @@ function BookPage() {
   const { id } = useParams(); // Book ID from URL
   const [bookData, setBookData] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [characters, setCharacters] = useState([]);
   const [newReview, setNewReview] = useState({
     reviewer_name: "",
     rating: "",
@@ -15,13 +16,14 @@ function BookPage() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Fetch book data and reviews
+  // Fetch book data, reviews, and characters
   useEffect(() => {
     axios
       .get(`https://livinglibrary.onrender.com/api/book/${id}`)
       .then((response) => {
         setBookData(response.data.book);
         setReviews(response.data.reviews || []);
+        setCharacters(response.data.characters || []); // Include characters
         setLoading(false);
       })
       .catch((err) => {
@@ -96,7 +98,7 @@ function BookPage() {
           </p>
           <div style={{ marginTop: "1rem" }}>
             <button
-              onClick={() => navigate(`/chat/librarian/`)}
+              onClick={() => navigate(`/chat/librarian/${id}`)}
               style={{
                 background: "#007BFF",
                 color: "white",
@@ -109,19 +111,24 @@ function BookPage() {
             >
               Chat to Librarian
             </button>
-            <button
-              onClick={() => navigate(`/chat/raskolnikov`)}
-              style={{
-                background: "#6c757d",
-                color: "white",
-                border: "none",
-                padding: "0.5rem 1rem",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Chat to Raskolnikov
-            </button>
+            {characters.map((character) => (
+              <button
+                key={character.id}
+                onClick={() => navigate(`/chat/character/${character.name}`)}
+                style={{
+                  background: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  marginRight: "0.5rem",
+                  marginTop: "0.5rem",
+                }}
+              >
+                Chat to {character.name}
+              </button>
+            ))}
           </div>
         </div>
       </div>

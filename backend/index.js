@@ -46,7 +46,7 @@ app.get("/api/book/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Fetch book data from Supabase
+    // Fetch book data
     const { data: book, error: bookError } = await supabase
       .from("books")
       .select("*")
@@ -57,17 +57,20 @@ app.get("/api/book/:id", async (req, res) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
-    // Fetch reviews for the book
-    const { data: reviews, error: reviewsError } = await supabase
-      .from("reviews")
+    // Fetch characters for the book
+    const { data: characters, error: charactersError } = await supabase
+      .from("characters")
       .select("*")
       .eq("book_id", id);
 
-    if (reviewsError) {
-      console.error("Error fetching reviews:", reviewsError);
+    if (charactersError) {
+      console.error("Error fetching characters:", charactersError);
     }
 
-    res.json({ book, reviews: reviews || [] });
+    res.json({
+      book,
+      characters: characters || [], // Include characters in response
+    });
   } catch (error) {
     console.error("Error fetching book data:", error.message);
     res.status(500).json({ error: "Server error" });
@@ -79,7 +82,6 @@ app.post("/api/chat/librarian", async (req, res) => {
   try {
     const { userMessage, bookId } = req.body;
 
-    // Fetch book data from Supabase
     const { data: book, error: bookError } = await supabase
       .from("books")
       .select("*")
@@ -96,7 +98,6 @@ app.post("/api/chat/librarian", async (req, res) => {
       Use the following data for reference:
       - Published Year: ${book.published_year}
       - Description: ${book.description}
-      - Fun Facts: ${book.fun_facts.join(", ")}
       Answer in a helpful, factual way.
     `;
 
@@ -110,26 +111,38 @@ app.post("/api/chat/librarian", async (req, res) => {
       temperature: 0.7,
     });
 
-    const librarianMessage = response.choices[0].message.content;
-    res.json({ librarianMessage });
+    res.json({ librarianMessage: response.choices[0].message.content });
   } catch (error) {
     console.error("Error in librarian chat:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+
 // POST /api/chat/raskolnikov
-app.post("/api/chat/raskolnikov", async (req, res) => {
+app.post("/api/chat/character/:characterName", async (req, res) => {
   try {
+    const { characterName } = req.params; // Character name from URL
     const { userMessage } = req.body;
 
+    // Fetch character data from the database
+    const { data: character, error } = await supabase
+      .from("characters")
+      .select("*")
+      .eq("name", characterName)
+      .single();
+
+    if (error || !character) {
+      return res.status(404).json({ error: "Character not found" });
+    }
+
     const systemPrompt = `
-      You are Rodion Raskolnikov from the novel "Crime and Punishment" by Fyodor Dostoevsky.
-      You feel guilt and anguish over your crime.
-      You are intelligent, philosophical, but also paranoid and conflicted.
-      Roleplay as Raskolnikov in your responses, reflecting his mental turmoil.
+      You are ${character.name}, a character from the book "${character.book_title}" by ${character.book_author}.
+      ${character.description}
+      Roleplay as ${character.name} in your responses, reflecting their personality, motivations, and mental state.
     `;
 
+    // Generate chat response using OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -140,10 +153,10 @@ app.post("/api/chat/raskolnikov", async (req, res) => {
       temperature: 0.8,
     });
 
-    const raskolnikovMessage = response.choices[0].message.content;
-    res.json({ raskolnikovMessage });
+    const characterMessage = response.choices[0].message.content;
+    res.json({ characterMessage });
   } catch (error) {
-    console.error("Error in Raskolnikov chat:", error.message);
+    console.error("Error in character chat:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
