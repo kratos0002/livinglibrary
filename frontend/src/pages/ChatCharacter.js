@@ -10,7 +10,7 @@ const ChatCharacter = () => {
   const sendMessage = async () => {
     try {
       const response = await axios.post(
-        `https://livinglibrary.onrender.com/api/chat/character${characterName}`,
+        `https://livinglibrary.onrender.com/api/chat/character/${characterName}`,
         {
           userMessage,
           characterName, // Dynamically pass the character's name
