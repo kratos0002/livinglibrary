@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import BookPage from './pages/BookPage';
 import Navbar from "./components/Navbar";
 
-import ChatLibrarian from './pages/ChatLibrarian';
+import ChatCharacter from './pages/ChatCharacter';
 import ChatRaskolnikov from './pages/ChatRaskolnikov';
 import Home from './pages/home';
 
@@ -15,9 +15,9 @@ function App() {
         <Routes>
         <Route path="/" element={<Home />} />          {/* Add a route for "/" */}
           <Route path="/book/:id" element={<BookPage />} />
-          <Route path="/chat/librarian" element={<ChatLibrarian />} />
-          <Route path="/chat/raskolnikov" element={<ChatRaskolnikov />} />
-        </Routes>
+          <Route path="/chat/librarian/:bookId" element={<ChatLibrarian />} />
+          <Route path="/chat/character/:characterName" element={<ChatCharacter />} />
+          </Routes>
       </div>
     </Router>
   );
