@@ -3,28 +3,32 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 
 function HomePage() {
-  const userId = 1; // Replace with actual user ID from auth
+  const userId = 1; // Replace with actual user ID from authentication
   const [dashboardData, setDashboardData] = useState(null);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Fetch dashboard data
   useEffect(() => {
-    // Fetch user dashboard data
     axios
       .get(`https://livinglibrary.onrender.com/api/dashboard/${userId}`)
       .then((response) => {
-        setDashboardData(response.data || {});
+        console.log("Dashboard data fetched:", response.data);
+        setDashboardData(response.data);
       })
       .catch((err) => {
         console.error("Error fetching dashboard data:", err.message);
       });
+  }, [userId]);
 
-    // Fetch books
+  // Fetch books data
+  useEffect(() => {
     axios
       .get("https://livinglibrary.onrender.com/api/books")
       .then((response) => {
+        console.log("Books data fetched:", response.data);
         setBooks(response.data || []);
         setLoading(false);
       })
@@ -33,53 +37,43 @@ function HomePage() {
         setError("Failed to load books");
         setLoading(false);
       });
-  }, [userId]);
+  }, []);
 
   const filteredBooks = books.filter((book) =>
     book.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div style={{ textAlign: "center" }}>Loading books...</div>;
-  if (error) return <div style={{ textAlign: "center" }}>{error}</div>;
+  if (loading) return <div>Loading books...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
-    <div
-      style={{
-        fontFamily: "'Helvetica', 'Arial', sans-serif",
-        padding: "2rem",
-        backgroundColor: "#f9f9f9",
-        minHeight: "100vh",
-      }}
-    >
-      {/* User Dashboard Section */}
-      <div
-        style={{
-          marginBottom: "2rem",
-          padding: "2rem",
-          backgroundColor: "#ffffff",
-          borderRadius: "10px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <h2 style={{ fontSize: "2rem", marginBottom: "1rem", color: "#007BFF" }}>
-          Welcome back, {dashboardData?.username || "Reader"}!
-        </h2>
-        <p style={{ fontSize: "1.1rem", color: "#555" }}>
-          Books you've read: <strong>{dashboardData?.total_books || 0}</strong>
-        </p>
-        <p style={{ fontSize: "1.1rem", color: "#555" }}>
-          Pages you've explored: <strong>{dashboardData?.total_pages || 0}</strong>
-        </p>
-        <p style={{ fontSize: "1.1rem", color: "#555" }}>
-          Your top genres: <strong>{dashboardData?.top_genres?.join(", ") || "N/A"}</strong>
-        </p>
-        <p style={{ fontSize: "1.1rem", color: "#555" }}>
-          Your favorite authors: <strong>{dashboardData?.top_authors?.join(", ") || "N/A"}</strong>
-        </p>
-        <p style={{ fontSize: "1.1rem", color: "#555" }}>
-          Places you've visited: <strong>{dashboardData?.places_visited?.join(", ") || "N/A"}</strong>
-        </p>
-      </div>
+    <div style={{ fontFamily: "'Helvetica', 'Arial', sans-serif", padding: "2rem" }}>
+      {/* Dashboard Section */}
+      {dashboardData && (
+        <div
+          style={{
+            padding: "1rem",
+            backgroundColor: "#f8f9fa",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <h2 style={{ color: "#007BFF" }}>
+            Welcome back, {dashboardData.username || "Reader"}!
+          </h2>
+          <p>Books you've read: {dashboardData.total_books || 0}</p>
+          <p>Pages you've explored: {dashboardData.total_pages || 0}</p>
+          <p>Your top genres: {dashboardData.top_genres.join(", ") || "N/A"}</p>
+          <p>Your favorite authors: {dashboardData.top_authors.join(", ") || "N/A"}</p>
+          <p>
+            Places you've visited:{" "}
+            {dashboardData.places_visited.length > 0
+              ? dashboardData.places_visited.join(", ")
+              : "N/A"}
+          </p>
+        </div>
+      )}
 
       {/* Hero Section */}
       <div
@@ -92,9 +86,7 @@ function HomePage() {
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <h1 style={{ fontSize: "3rem", marginBottom: "0.5rem", color: "#007BFF" }}>
-          The Living Library
-        </h1>
+        <h1 style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>The Living Library</h1>
         <p style={{ fontSize: "1.2rem", color: "#555", marginBottom: "1.5rem" }}>
           Dive into a world of books, connect with characters, and explore literary adventures.
         </p>
@@ -109,28 +101,29 @@ function HomePage() {
             border: "1px solid #ddd",
             borderRadius: "5px",
             fontSize: "1rem",
-            outline: "none",
           }}
         />
       </div>
 
       {/* Books Section */}
       {filteredBooks.length === 0 ? (
-        <p style={{ textAlign: "center", fontSize: "1.2rem", color: "#666" }}>
+        <p style={{ textAlign: "center", fontSize: "1.2rem" }}>
           No books match your search. Try another term!
         </p>
       ) : (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            display: "flex",
+            flexWrap: "wrap",
             gap: "2rem",
+            justifyContent: "center",
           }}
         >
           {filteredBooks.map((book) => (
             <div
               key={book.id}
               style={{
+                width: "220px",
                 padding: "1rem",
                 border: "1px solid #ddd",
                 borderRadius: "8px",
@@ -190,7 +183,6 @@ function HomePage() {
                     cursor: "pointer",
                     marginTop: "1rem",
                     fontSize: "1rem",
-                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
                   }}
                 >
                   View Book

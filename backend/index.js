@@ -77,23 +77,11 @@ app.get("/api/book/:id", async (req, res) => {
   }
 });
 
-
-// GET /api/user/:userId/dashboard
-app.get("/api/user/:userId/dashboard", async (req, res) => {
+// GET /api/dashboard/:userId
+app.get("/api/dashboard/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Fetch user data
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (userError || !user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
     // Fetch user insights
     const { data: insights, error: insightsError } = await supabase
       .from("insights")
@@ -102,36 +90,20 @@ app.get("/api/user/:userId/dashboard", async (req, res) => {
       .single();
 
     if (insightsError || !insights) {
-      return res.status(404).json({ error: "Insights not found" });
+      console.error("Error fetching insights:", insightsError);
+      return res.status(404).json({ error: "No insights found for the user." });
     }
-
-    // Fetch books the user has read
-    const { data: userBooks, error: booksError } = await supabase
-      .from("user_books")
-      .select("*, books(*)") // Join with the "books" table
-      .eq("user_id", userId);
-
-    if (booksError || !userBooks) {
-      return res.status(404).json({ error: "Books not found" });
-    }
-
-    // Aggregate data for places visited (from the "books" table)
-    const places = userBooks
-      .map((entry) => entry.books.places || [])
-      .flat()
-      .filter((place, index, self) => self.indexOf(place) === index); // Unique places
 
     res.json({
-      user: {
-        name: user.name,
-        email: user.email,
-      },
-      insights,
-      books: userBooks.map((entry) => entry.books), // Return book details
-      places,
+      username: insights.username || "Reader",
+      total_books: insights.total_books || 0,
+      total_pages: insights.total_pages || 0,
+      top_genres: insights.top_genres || [],
+      top_authors: insights.top_authors || [],
+      places_visited: insights.places_visited || [],
     });
-  } catch (err) {
-    console.error("Error fetching dashboard data:", err.message);
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
