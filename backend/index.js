@@ -127,6 +127,105 @@ app.get("/api/dashboard/:userId", async (req, res) => {
 });
 
 
+app.post("/api/books/add", async (req, res) => {
+  const { userId, title, author } = req.body;
+
+  if (!userId || !title || !author) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    // Step 1: Call ChatGPT API to generate the remaining book details
+    const systemPrompt = `
+      You are an expert librarian. Generate detailed metadata for the following book:
+      - Title: ${title}
+      - Author: ${author}
+      Provide the following:
+      1. Description (summary of the book)
+      2. Themes (comma-separated list)
+      3. Genre
+      4. Settings (time period and locations)
+      5. Approximate page count
+      6. Character archetypes.
+    `;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: "Please provide detailed book metadata." },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    });
+
+    const enrichedDetails = JSON.parse(response.choices[0].message.content);
+
+    const {
+      description,
+      themes,
+      genre,
+      settings,
+      historical_period,
+      page_count,
+      character_archetypes,
+    } = enrichedDetails;
+
+    // Step 2: Insert the new book into the database
+    const { data: newBook, error: bookError } = await supabase
+      .from("books")
+      .insert({
+        title,
+        author,
+        description,
+        themes,
+        genre,
+        settings,
+        historical_period,
+        page_count,
+        character_archetypes,
+      })
+      .select("*")
+      .single();
+
+    if (bookError) {
+      console.error("Error inserting book:", bookError);
+      return res.status(500).json({ error: "Error adding book" });
+    }
+
+    // Step 3: Add the book to the user's library
+    const { data: libraryEntry, error: libraryError } = await supabase
+      .from("user_library")
+      .insert({
+        user_id: userId,
+        book_id: newBook.id,
+        status: "read", // Default status
+        added_at: new Date(),
+      });
+
+    if (libraryError) {
+      console.error("Error updating user library:", libraryError);
+      return res.status(500).json({ error: "Error updating user library" });
+    }
+
+    // Step 4: Recalculate insights for the user
+    const { error: insightsError } = await supabase.rpc("update_insights", {
+      user_id_input: userId,
+    });
+
+    if (insightsError) {
+      console.error("Error updating insights:", insightsError);
+      return res.status(500).json({ error: "Error updating insights" });
+    }
+
+    res.json({ success: true, book: newBook });
+  } catch (error) {
+    console.error("Error adding book:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 
 // POST /api/chat/librarian
 app.post("/api/chat/librarian", async (req, res) => {

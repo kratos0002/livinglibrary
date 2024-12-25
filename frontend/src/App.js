@@ -6,6 +6,7 @@ import ChatLibrarian from './pages/ChatLibrarian';
 import ChatCharacter from './pages/ChatCharacter';
 import ChatRaskolnikov from './pages/ChatCharacter';
 import Home from './pages/home';
+import AddBookForm from './pages/AddBookForm';
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
           <Route path="/book/:id" element={<BookPage />} />
           <Route path="/chat/librarian/:bookId" element={<ChatLibrarian />} />
           <Route path="/chat/character/:characterName" element={<ChatCharacter />} />
+          <Route path="/books/add" element={<AddBookForm />} />
+
           </Routes>
       </div>
     </Router>
