@@ -77,36 +77,55 @@ app.get("/api/book/:id", async (req, res) => {
   }
 });
 
-// GET /api/dashboard/:userId
 app.get("/api/dashboard/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Fetch user insights
+    // Fetch user insights from the `insights` table
     const { data: insights, error: insightsError } = await supabase
       .from("insights")
-      .select("*")
+      .select(
+        "total_books_read, total_pages_read, top_genres, top_themes, top_authors, favorite_locations"
+      )
       .eq("user_id", userId)
       .single();
 
-    if (insightsError || !insights) {
+    if (insightsError) {
       console.error("Error fetching insights:", insightsError);
-      return res.status(404).json({ error: "No insights found for the user." });
+      return res.status(500).json({ error: "Error fetching user insights" });
     }
 
-    res.json({
-      username: insights.username || "Reader",
-      total_books: insights.total_books || 0,
-      total_pages: insights.total_pages || 0,
+    // Fetch the user's name from the `users` table
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("username")
+      .eq("id", userId)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user data:", userError);
+      return res.status(500).json({ error: "Error fetching user data" });
+    }
+
+    // Construct the response object
+    const dashboardData = {
+      username: user?.username || "User",
+      total_books: insights.total_books_read || 0,
+      total_pages: insights.total_pages_read || 0,
       top_genres: insights.top_genres || [],
+      top_themes: insights.top_themes || [],
       top_authors: insights.top_authors || [],
-      places_visited: insights.places_visited || [],
-    });
+      places_visited: insights.favorite_locations || [],
+    };
+
+    // Return the dashboard data
+    res.json(dashboardData);
   } catch (error) {
     console.error("Error fetching dashboard data:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 
 // POST /api/chat/librarian
