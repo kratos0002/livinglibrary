@@ -131,7 +131,7 @@ app.post("/api/books/add/:userId", async (req, res) => {
   const { title, author } = req.body;
 
   if (!title || !author) {
-    return res.status(400).json({ error: "Title and author are required" });
+    return res.status(400).json({ error: "Title and author are required." });
   }
 
   try {
@@ -147,7 +147,7 @@ app.post("/api/books/add/:userId", async (req, res) => {
       return res.status(409).json({ error: "Book already exists in the database." });
     }
 
-    // Generate metadata using GPT (same as before)
+    // Generate metadata using GPT
     const systemPrompt = `
       You are an expert librarian. Generate detailed metadata for the following book:
       - Title: ${title}
@@ -161,6 +161,13 @@ app.post("/api/books/add/:userId", async (req, res) => {
         "settings": { "locations": ["location1", "location2"], "time_period": "historical time period" },
         "page_count": 500,
         "character_archetypes": ["archetype1", "archetype2"],
+        "main_characters": [
+          { "name": "Character Name 1", "description": "Character Description 1" },
+          { "name": "Character Name 2", "description": "Character Description 2" }
+        ],
+        "fun_facts": ["fact1", "fact2"],
+        "historical_period": "time period",
+        "published_year": 1869,
         "cover_image": "A URL of the book cover"
       }
     `;
@@ -180,13 +187,18 @@ app.post("/api/books/add/:userId", async (req, res) => {
       enrichedDetails = JSON.parse(response.choices[0].message.content);
     } catch (parseError) {
       console.error("Error parsing GPT response:", parseError.message);
-      return res.status(500).json({ error: "Invalid GPT response format" });
+      return res.status(500).json({ error: "Invalid GPT response format." });
     }
 
-    // Ensure cover_image is valid
-    if (!enrichedDetails.cover_image || !enrichedDetails.cover_image.startsWith("http")) {
-      enrichedDetails.cover_image = "https://via.placeholder.com/150"; // Default placeholder image
-    }
+    // Ensure required fields have fallback values
+    enrichedDetails.cover_image = enrichedDetails.cover_image?.startsWith("http")
+      ? enrichedDetails.cover_image
+      : "https://via.placeholder.com/150"; // Default placeholder image
+    enrichedDetails.published_year = enrichedDetails.published_year || "Unknown";
+    enrichedDetails.fun_facts = enrichedDetails.fun_facts || ["No fun facts available."];
+    enrichedDetails.page_count = enrichedDetails.page_count || 300; // Example fallback
+    enrichedDetails.themes = enrichedDetails.themes || [];
+    enrichedDetails.genre = enrichedDetails.genre || "Unknown";
 
     // Add book to database
     const { data: newBook, error: bookError } = await supabase
@@ -194,14 +206,23 @@ app.post("/api/books/add/:userId", async (req, res) => {
       .insert({
         title,
         author,
-        ...enrichedDetails,
+        description: enrichedDetails.description,
+        cover_image: enrichedDetails.cover_image,
+        page_count: enrichedDetails.page_count,
+        themes: enrichedDetails.themes,
+        genre: enrichedDetails.genre,
+        settings: enrichedDetails.settings,
+        historical_period: enrichedDetails.historical_period,
+        character_archetypes: enrichedDetails.character_archetypes,
+        fun_facts: enrichedDetails.fun_facts,
+        published_year: enrichedDetails.published_year,
       })
       .select("*")
       .single();
 
     if (bookError) {
       console.error("Database Error:", bookError);
-      return res.status(500).json({ error: "Error adding book to database" });
+      return res.status(500).json({ error: "Error adding book to database." });
     }
 
     // Add book to user's library
@@ -216,16 +237,30 @@ app.post("/api/books/add/:userId", async (req, res) => {
 
     if (libraryError) {
       console.error("Library Error:", libraryError);
-      return res.status(500).json({ error: "Error adding book to user library" });
+      return res.status(500).json({ error: "Error adding book to user library." });
     }
 
-    res.status(200).json({ message: "Book added successfully", book: newBook });
+    // Add main characters to the characters table
+    if (enrichedDetails.main_characters?.length) {
+      const characters = enrichedDetails.main_characters.map((character) => ({
+        name: character.name,
+        description: character.description,
+        book_id: newBook.id,
+      }));
+
+      const { error: characterError } = await supabase.from("characters").insert(characters);
+
+      if (characterError) {
+        console.error("Character Error:", characterError);
+      }
+    }
+
+    res.status(200).json({ message: "Book added successfully!", book: newBook });
   } catch (error) {
     console.error("Error adding book:", error.message);
-    res.status(500).json({ error: "Server error while adding book" });
+    res.status(500).json({ error: "Server error while adding book." });
   }
 });
-
 
 // POST /api/chat/librarian
 app.post("/api/chat/librarian", async (req, res) => {
