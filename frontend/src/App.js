@@ -18,7 +18,7 @@ function App() {
           <Route path="/book/:id" element={<BookPage />} />
           <Route path="/chat/librarian/:bookId" element={<ChatLibrarian />} />
           <Route path="/chat/character/:characterName" element={<ChatCharacter />} />
-          <Route path="/books/add" element={<AddBookForm />} />
+          <Route path="/books/add/:userId" element={<AddBookForm />} />
 
           </Routes>
       </div>
