@@ -48,33 +48,48 @@ function HomePage() {
 
   return (
     <div style={{ fontFamily: "'Helvetica', 'Arial', sans-serif", padding: "2rem" }}>
-      {/* Dashboard Section */}
-      {dashboardData && (
-        <div
-          style={{
-            padding: "1rem",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "8px",
-            marginBottom: "2rem",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h2 style={{ color: "#007BFF" }}>
-            Welcome back, {dashboardData.username || "Reader"}!
-          </h2>
-          <p>Books you've read: {dashboardData.total_books || 0}</p>
-          <p>Pages you've explored: {dashboardData.total_pages || 0}</p>
-          <p>Your top genres: {dashboardData.top_genres.join(", ") || "N/A"}</p>
-          <p>Your favorite authors: {dashboardData.top_authors.join(", ") || "N/A"}</p>
-          <p>
-            Places you've visited:{" "}
-            {dashboardData.places_visited.length > 0
-              ? dashboardData.places_visited.join(", ")
-              : "N/A"}
-          </p>
-        </div>
-      )}
-
+       {/* Dashboard Section */}
+  <div
+    style={{
+      textAlign: "center",
+      marginBottom: "2rem",
+      padding: "2rem",
+      backgroundColor: "#ffffff",
+      borderRadius: "10px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    }}
+  >
+    <h1 style={{ fontSize: "2.5rem", color: "#007BFF" }}>
+      Welcome back, {dashboardData?.username || "Reader"}!
+    </h1>
+    <p style={{ fontSize: "1.2rem", marginTop: "1rem" }}>
+      <strong>Books you've read:</strong> {dashboardData?.total_books || 0}
+    </p>
+    <p>
+      <strong>Pages you've explored:</strong> {dashboardData?.total_pages || 0}
+    </p>
+    <p>
+      <strong>Your top genres:</strong>{" "}
+      {dashboardData?.top_genres && dashboardData.top_genres.length > 0
+        ? dashboardData.top_genres.join(", ")
+        : "N/A"}
+    </p>
+    <p>
+      <strong>Your favorite authors:</strong>{" "}
+      {dashboardData?.top_authors && dashboardData.top_authors.length > 0
+        ? dashboardData.top_authors.join(", ")
+        : "N/A"}
+    </p>
+    <p>
+      <strong>Places you've visited:</strong>{" "}
+      {dashboardData?.places_visited && dashboardData.places_visited.length > 0
+        ? dashboardData.places_visited
+            .map((place) => `${place.city}, ${place.country}`)
+            .join(" | ")
+        : "N/A"}
+    </p>
+  </div>
+  
       {/* Hero Section */}
       <div
         style={{
