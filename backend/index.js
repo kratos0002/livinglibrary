@@ -126,8 +126,6 @@ app.get("/api/dashboard/:userId", async (req, res) => {
   }
 });
 
-
-// POST /api/books/add/:userId
 app.post("/api/books/add/:userId", async (req, res) => {
   const { userId } = req.params;
   const { title, author } = req.body;
@@ -137,7 +135,19 @@ app.post("/api/books/add/:userId", async (req, res) => {
   }
 
   try {
-    // Generate metadata using GPT
+    // Check if the book already exists
+    const { data: existingBook, error: checkError } = await supabase
+      .from("books")
+      .select("*")
+      .eq("title", title)
+      .eq("author", author)
+      .single();
+
+    if (existingBook) {
+      return res.status(409).json({ error: "Book already exists in the database." });
+    }
+
+    // Generate metadata using GPT (same as before)
     const systemPrompt = `
       You are an expert librarian. Generate detailed metadata for the following book:
       - Title: ${title}
@@ -150,7 +160,8 @@ app.post("/api/books/add/:userId", async (req, res) => {
         "genre": "Book genre",
         "settings": { "locations": ["location1", "location2"], "time_period": "historical time period" },
         "page_count": 500,
-        "character_archetypes": ["archetype1", "archetype2"]
+        "character_archetypes": ["archetype1", "archetype2"],
+        "cover_image": "A URL of the book cover"
       }
     `;
 
@@ -164,25 +175,18 @@ app.post("/api/books/add/:userId", async (req, res) => {
       temperature: 0.7,
     });
 
-    // Parse GPT response
     let enrichedDetails;
     try {
       enrichedDetails = JSON.parse(response.choices[0].message.content);
     } catch (parseError) {
       console.error("Error parsing GPT response:", parseError.message);
-      console.error("GPT Response:", response.choices[0].message.content);
       return res.status(500).json({ error: "Invalid GPT response format" });
     }
 
-    const {
-      description,
-      themes,
-      genre,
-      settings,
-      historical_period,
-      page_count,
-      character_archetypes,
-    } = enrichedDetails;
+    // Ensure cover_image is valid
+    if (!enrichedDetails.cover_image || !enrichedDetails.cover_image.startsWith("http")) {
+      enrichedDetails.cover_image = "https://via.placeholder.com/150"; // Default placeholder image
+    }
 
     // Add book to database
     const { data: newBook, error: bookError } = await supabase
@@ -190,13 +194,7 @@ app.post("/api/books/add/:userId", async (req, res) => {
       .insert({
         title,
         author,
-        description,
-        themes,
-        genre,
-        settings,
-        historical_period,
-        page_count,
-        character_archetypes,
+        ...enrichedDetails,
       })
       .select("*")
       .single();
@@ -221,8 +219,7 @@ app.post("/api/books/add/:userId", async (req, res) => {
       return res.status(500).json({ error: "Error adding book to user library" });
     }
 
-    // Trigger insights update (if implemented via triggers, this will run automatically)
-    return res.status(200).json({ message: "Book added successfully", book: newBook });
+    res.status(200).json({ message: "Book added successfully", book: newBook });
   } catch (error) {
     console.error("Error adding book:", error.message);
     res.status(500).json({ error: "Server error while adding book" });

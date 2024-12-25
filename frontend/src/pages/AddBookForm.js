@@ -8,7 +8,7 @@ const AddBook = () => {
 
   const handleAddBook = async () => {
     if (!title || !author) {
-      setStatusMessage("Title and Author are required.");
+      setStatusMessage("Both Title and Author are required.");
       return;
     }
 
@@ -24,8 +24,11 @@ const AddBook = () => {
         setAuthor("");
       }
     } catch (error) {
-      console.error("Error adding book:", error.message);
-      setStatusMessage("Failed to add book. Please try again.");
+      if (error.response && error.response.status === 409) {
+        setStatusMessage("Book already exists in the database.");
+      } else {
+        setStatusMessage("Failed to add book. Please try again.");
+      }
     }
   };
 
