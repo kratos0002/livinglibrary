@@ -127,26 +127,31 @@ app.get("/api/dashboard/:userId", async (req, res) => {
 });
 
 
-app.post("/api/books/add", async (req, res) => {
-  const { userId, title, author } = req.body;
+// POST /api/books/add/:userId
+app.post("/api/books/add/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { title, author } = req.body;
 
-  if (!userId || !title || !author) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!title || !author) {
+    return res.status(400).json({ error: "Title and author are required" });
   }
 
   try {
-    // Step 1: Call ChatGPT API to generate the remaining book details
+    // Generate metadata using GPT
     const systemPrompt = `
       You are an expert librarian. Generate detailed metadata for the following book:
       - Title: ${title}
       - Author: ${author}
-      Provide the following:
-      1. Description (summary of the book)
-      2. Themes (comma-separated list)
-      3. Genre
-      4. Settings (time period and locations)
-      5. Approximate page count
-      6. Character archetypes.
+
+      Respond in the following JSON format only:
+      {
+        "description": "A short description of the book",
+        "themes": ["theme1", "theme2", "theme3"],
+        "genre": "Book genre",
+        "settings": { "locations": ["location1", "location2"], "time_period": "historical time period" },
+        "page_count": 500,
+        "character_archetypes": ["archetype1", "archetype2"]
+      }
     `;
 
     const response = await openai.chat.completions.create({
@@ -159,7 +164,15 @@ app.post("/api/books/add", async (req, res) => {
       temperature: 0.7,
     });
 
-    const enrichedDetails = JSON.parse(response.choices[0].message.content);
+    // Parse GPT response
+    let enrichedDetails;
+    try {
+      enrichedDetails = JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("Error parsing GPT response:", parseError.message);
+      console.error("GPT Response:", response.choices[0].message.content);
+      return res.status(500).json({ error: "Invalid GPT response format" });
+    }
 
     const {
       description,
@@ -171,7 +184,7 @@ app.post("/api/books/add", async (req, res) => {
       character_archetypes,
     } = enrichedDetails;
 
-    // Step 2: Insert the new book into the database
+    // Add book to database
     const { data: newBook, error: bookError } = await supabase
       .from("books")
       .insert({
@@ -189,42 +202,32 @@ app.post("/api/books/add", async (req, res) => {
       .single();
 
     if (bookError) {
-      console.error("Error inserting book:", bookError);
-      return res.status(500).json({ error: "Error adding book" });
+      console.error("Database Error:", bookError);
+      return res.status(500).json({ error: "Error adding book to database" });
     }
 
-    // Step 3: Add the book to the user's library
-    const { data: libraryEntry, error: libraryError } = await supabase
+    // Add book to user's library
+    const { error: libraryError } = await supabase
       .from("user_library")
       .insert({
         user_id: userId,
         book_id: newBook.id,
-        status: "read", // Default status
+        status: "added",
         added_at: new Date(),
       });
 
     if (libraryError) {
-      console.error("Error updating user library:", libraryError);
-      return res.status(500).json({ error: "Error updating user library" });
+      console.error("Library Error:", libraryError);
+      return res.status(500).json({ error: "Error adding book to user library" });
     }
 
-    // Step 4: Recalculate insights for the user
-    const { error: insightsError } = await supabase.rpc("update_insights", {
-      user_id_input: userId,
-    });
-
-    if (insightsError) {
-      console.error("Error updating insights:", insightsError);
-      return res.status(500).json({ error: "Error updating insights" });
-    }
-
-    res.json({ success: true, book: newBook });
+    // Trigger insights update (if implemented via triggers, this will run automatically)
+    return res.status(200).json({ message: "Book added successfully", book: newBook });
   } catch (error) {
     console.error("Error adding book:", error.message);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error while adding book" });
   }
 });
-
 
 
 // POST /api/chat/librarian
