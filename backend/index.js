@@ -241,10 +241,10 @@ app.post("/api/books/add/:userId", async (req, res) => {
     }
 
     // Add main characters to the characters table
-    if (enrichedDetails.main_characters?.length) {
+    if (Array.isArray(enrichedDetails.main_characters) && enrichedDetails.main_characters.length > 0) {
       const characters = enrichedDetails.main_characters.map((character) => ({
-        name: character.name,
-        description: character.description,
+        name: character.name || "Unknown Character",
+        description: character.description || "No description available",
         book_id: newBook.id,
       }));
 
@@ -255,12 +255,57 @@ app.post("/api/books/add/:userId", async (req, res) => {
       }
     }
 
+    // Add themes to the themes table and book_themes table
+    if (Array.isArray(enrichedDetails.themes) && enrichedDetails.themes.length > 0) {
+      for (const themeName of enrichedDetails.themes) {
+        const { data: theme, error: themeError } = await supabase
+          .from("themes")
+          .upsert({ name: themeName }, { onConflict: "name" }) // Ensure themes are unique
+          .select("id")
+          .single();
+
+        if (!themeError && theme) {
+          const { error: bookThemeError } = await supabase
+            .from("book_themes")
+            .insert({ book_id: newBook.id, theme_id: theme.id });
+
+          if (bookThemeError) {
+            console.error("Error inserting into book_themes:", bookThemeError);
+          }
+        } else {
+          console.error("Error inserting/updating theme:", themeError);
+        }
+      }
+    }
+
+    // Add genre to the genres table and book_genres table
+    if (enrichedDetails.genre) {
+      const { data: genre, error: genreError } = await supabase
+        .from("genres")
+        .upsert({ name: enrichedDetails.genre }, { onConflict: "name" }) // Ensure genres are unique
+        .select("id")
+        .single();
+
+      if (!genreError && genre) {
+        const { error: bookGenreError } = await supabase
+          .from("book_genres")
+          .insert({ book_id: newBook.id, genre_id: genre.id });
+
+        if (bookGenreError) {
+          console.error("Error inserting into book_genres:", bookGenreError);
+        }
+      } else {
+        console.error("Error inserting/updating genre:", genreError);
+      }
+    }
+
     res.status(200).json({ message: "Book added successfully!", book: newBook });
   } catch (error) {
     console.error("Error adding book:", error.message);
     res.status(500).json({ error: "Server error while adding book." });
   }
 });
+
 
 // POST /api/chat/librarian
 app.post("/api/chat/librarian", async (req, res) => {
